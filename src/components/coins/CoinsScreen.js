@@ -1,36 +1,44 @@
 import React from 'react';
-import {View, Text, Pressable, StyleSheet} from 'react-native';
+import {View, ActivityIndicator, StyleSheet} from 'react-native';
+import useCoins from '../../hooks/useCoins';
+
+import CoinsList from './CoinsList';
+
+import colors from '../../resources/colors';
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    backgroundColor: 'red',
+    backgroundColor: colors.charade,
   },
-  title: {
-    alignSelf: 'center',
-    color: 'white',
-  },
-  btn: {
-    padding: 8,
-    backgroundColor: 'blue',
-    borderRadius: 8,
-    margin: 16,
-  },
-  btnText: {
-    color: 'white',
-    textAlign: 'center',
+  loaderContainer: {
+    backgroundColor: colors.charade,
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: '100%',
   },
 });
 
 function CoinsScreen({navigation}) {
-  const handlePress = () => navigation.navigate('CoinDetail');
+  const {coins: coinsList, loading} = useCoins();
+
+  const handlePress = id => {
+    navigation.navigate('CoinDetail', {
+      coinDetail: coinsList.filter(coin => coin.id === id)[0],
+    });
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loaderContainer}>
+        <ActivityIndicator color="white" size="large" />
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Testing from Coins' Screen!</Text>
-      <Pressable style={styles.btn} onPress={handlePress}>
-        <Text style={styles.btnText}>Ir a Coin Detail</Text>
-      </Pressable>
+      <CoinsList coins={coinsList} handlePress={handlePress} />
     </View>
   );
 }
