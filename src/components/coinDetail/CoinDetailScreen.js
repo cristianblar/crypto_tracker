@@ -6,12 +6,15 @@ import {
   Image,
   ActivityIndicator,
   SectionList,
+  Pressable,
   StyleSheet,
+  Alert,
 } from 'react-native';
 
 import CoinMarketsList from './CoinMarketsList';
 
 import Http from '../../lib/http';
+import Storage from '../../lib/storage';
 import colors from '../../resources/colors';
 
 const styles = StyleSheet.create({
@@ -41,7 +44,7 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   currencyImage: {
-    marginRight: 12,
+    marginRight: 18,
     height: 25,
     width: 25,
   },
@@ -77,6 +80,34 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#3cd484',
   },
+  addFavoriteContainer: {
+    backgroundColor: '#3cd484',
+    borderRadius: 50,
+    marginLeft: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 25,
+    width: 25,
+  },
+  addFavorite: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  removeFavoriteContainer: {
+    backgroundColor: '#fa6060',
+    borderRadius: 50,
+    marginLeft: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 25,
+    width: 25,
+  },
+  removeFavorite: {
+    color: colors.white,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
 });
 
 function CoinDetailScreen({
@@ -88,6 +119,7 @@ function CoinDetailScreen({
   const [loading, setLoading] = useState(true);
   const [sections, setSections] = useState([]);
   const [markets, setMarkets] = useState([]);
+  const [isFavorite, toggleFavoriteStatus] = useState(false);
 
   const getSections = () => {
     // Each object will be a section:
@@ -132,11 +164,62 @@ function CoinDetailScreen({
 
   useEffect(() => {
     navigation.setOptions({title: coinDetail.symbol});
+    const key = `favorite-${coinDetail.id}`;
     getSections();
     getMarkets(coinDetail.id)
-      .then(() => setLoading(false))
+      .then(() => {
+        Storage.instance
+          .get(key)
+          .then(result => {
+            result ? toggleFavoriteStatus(true) : toggleFavoriteStatus(false);
+            setLoading(false);
+          })
+          .catch(console.log);
+      })
       .catch(console.log);
   }, []);
+
+  const toggleFavorite = async () => {
+    let result;
+    const key = `favorite-${coinDetail.id}`;
+    if (!isFavorite) {
+      const coinToSave = JSON.stringify(coinDetail);
+      try {
+        result = await Storage.instance.store(key, coinToSave);
+        if (result) {
+          toggleFavoriteStatus(!isFavorite);
+        }
+      } catch (error) {
+        console.log(error);
+      }
+    } else {
+      Alert.alert(
+        'Are you sure?',
+        `This will remove ${coinDetail.symbol} from your favorites`,
+        [
+          {
+            text: 'Cancel',
+            onPress: () => {},
+            style: 'cancel',
+          },
+          {
+            text: 'Remove',
+            onPress: async () => {
+              try {
+                result = await Storage.instance.remove(key);
+                if (result) {
+                  toggleFavoriteStatus(!isFavorite);
+                }
+              } catch (error) {
+                console.log(error);
+              }
+            },
+            style: 'destructive',
+          },
+        ],
+      );
+    }
+  };
 
   if (loading) {
     return (
@@ -156,6 +239,19 @@ function CoinDetailScreen({
           }}
         />
         <Text style={styles.title}>{coinDetail.name}</Text>
+        {!isFavorite ? (
+          <Pressable
+            onPress={toggleFavorite}
+            style={styles.addFavoriteContainer}>
+            <Text style={styles.addFavorite}>+</Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={toggleFavorite}
+            style={styles.removeFavoriteContainer}>
+            <Text style={styles.removeFavorite}>-</Text>
+          </Pressable>
+        )}
       </View>
       <SectionList
         style={styles.sectionContainer}
