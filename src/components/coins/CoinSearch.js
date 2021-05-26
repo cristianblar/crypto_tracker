@@ -40,7 +40,9 @@ function CoinSearch({handleInput, query}) {
             : styles.queryInputAndroid
         }
         placeholder="Search currency..."
-        placeholderTextColor={colors.charade}
+        placeholderTextColor={
+          Platform.OS === 'android' ? colors.white : colors.charade
+        }
         onChangeText={handleInput}
         value={query}
         clearButtonMode="while-editing"
